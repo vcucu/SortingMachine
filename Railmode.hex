@@ -1,0 +1,287 @@
+@C 3ffff 0011d
+00018       ; 00000 begin :           BRA initialization
+00214       ; 00001 Hex7Seg :         BRS Hex7Seg_bgn
+0007e       ; 00002 Hex7Seg_tbl :     CONS %01111110
+00030       ; 00003                   CONS %00110000
+0006d       ; 00004                   CONS %01101101
+00079       ; 00005                   CONS %01111001
+00033       ; 00006                   CONS %00110011
+0005b       ; 00007                   CONS %01011011
+0005f       ; 00008                   CONS %01011111
+00070       ; 00009                   CONS %01110000
+0007f       ; 0000a                   CONS %01111111
+0007b       ; 0000b                   CONS %01111011
+00077       ; 0000c                   CONS %01110111
+0001f       ; 0000d                   CONS %00011111
+0004e       ; 0000e                   CONS %01001110
+0003d       ; 0000f                   CONS %00111101
+0004f       ; 00010                   CONS %01001111
+00047       ; 00011                   CONS %01000111
+00037       ; 00012                   CONS %00110111
+0000e       ; 00013                   CONS %00001110
+00063       ; 00014                   CONS %01100011
+0001d       ; 00015                   CONS %00011101
+08df1       ; 00016 Hex7Seg_bgn :     LOAD R1 [R7++]
+08d20       ; 00017                   LOAD R1 [R1+R0]
+045f1       ; 00018                   RTS
+08000       ; 00019 initialization :  LOAD R0 0
+104ad       ; 0001a                   SUB R0 [R5+TIMER]
+3c4ad       ; 0001b                   STOR R0 [R5+TIMER]
+08000       ; 0001c                   LOAD R0 %0000
+3c4c1       ; 0001d                   STOR R0 [R6+oldinput]
+0a8f0       ; 0001e                   LOAD R5 IOAREA
+09810       ; 0001f                   LOAD R3 %010000
+3dcab       ; 00020                   STOR R3 [R5+OUTPUT]
+00201       ; 00021                   BRS initialposition
+0003a       ; 00022                   BRA startbutton
+09ca7       ; 00023 initialposition : LOAD R3 [R5+INPUT]
+31808       ; 00024                   AND R3 %01000
+15808       ; 00025                   CMP R3 %01000
+00418       ; 00026                   BEQ returnfrominit
+09853       ; 00027                   LOAD R3 fast
+3dcc0       ; 00028                   STOR R3 [R6+speed]
+09804       ; 00029 on_set2 :         LOAD R3 %0100
+3dcab       ; 0002a                   STOR R3 [R5+OUTPUT]
+09cad       ; 0002b                   LOAD R3 [R5+TIMER]
+0a4c0       ; 0002c                   LOAD R4 [R6+speed]
+11904       ; 0002d                   SUB R3 R4
+00000       ; 0002e                   BRA on_wait2
+0a4ad       ; 0002f on_wait2 :        LOAD R4 [R5+TIMER]
+16103       ; 00030                   CMP R4 R3
+01601       ; 00031                   BMI off_set2
+001fc       ; 00032                   BRA on_wait2
+09800       ; 00033 off_set2 :        LOAD R3 %0000
+3dcab       ; 00034                   STOR R3 [R5+OUTPUT]
+09cc0       ; 00035                   LOAD R3 [R6+speed]
+0a064       ; 00036                   LOAD R4 100
+12103       ; 00037                   SUB R4 R3
+09cad       ; 00038                   LOAD R3 [R5+TIMER]
+11904       ; 00039                   SUB R3 R4
+00000       ; 0003a                   BRA off_wait2
+0a4ad       ; 0003b off_wait2 :       LOAD R4 [R5+TIMER]
+16103       ; 0003c                   CMP R4 R3
+017e5       ; 0003d                   BMI initialposition
+001fc       ; 0003e                   BRA off_wait2
+045f1       ; 0003f returnfrominit :  RTS
+09ca7       ; 00040 pulledposition :  LOAD R3 [R5+INPUT]
+31810       ; 00041                   AND R3 %010000
+15810       ; 00042                   CMP R3 %010000
+00418       ; 00043                   BEQ returnfrompull
+09853       ; 00044                   LOAD R3 fast
+3dcc0       ; 00045                   STOR R3 [R6+speed]
+09808       ; 00046 on_set3 :         LOAD R3 %01000
+3dcab       ; 00047                   STOR R3 [R5+OUTPUT]
+09cad       ; 00048                   LOAD R3 [R5+TIMER]
+0a4c0       ; 00049                   LOAD R4 [R6+speed]
+11904       ; 0004a                   SUB R3 R4
+00000       ; 0004b                   BRA on_wait3
+0a4ad       ; 0004c on_wait3 :        LOAD R4 [R5+TIMER]
+16103       ; 0004d                   CMP R4 R3
+01601       ; 0004e                   BMI off_set3
+001fc       ; 0004f                   BRA on_wait3
+09800       ; 00050 off_set3 :        LOAD R3 %0000
+3dcab       ; 00051                   STOR R3 [R5+OUTPUT]
+09cc0       ; 00052                   LOAD R3 [R6+speed]
+0a064       ; 00053                   LOAD R4 100
+12103       ; 00054                   SUB R4 R3
+09cad       ; 00055                   LOAD R3 [R5+TIMER]
+11904       ; 00056                   SUB R3 R4
+00000       ; 00057                   BRA off_wait3
+0a4ad       ; 00058 off_wait3 :       LOAD R4 [R5+TIMER]
+16103       ; 00059                   CMP R4 R3
+017e5       ; 0005a                   BMI pulledposition
+001fc       ; 0005b                   BRA off_wait3
+045f1       ; 0005c returnfrompull :  RTS
+09800       ; 0005d startbutton :     LOAD R3 0
+3dcc3       ; 0005e                   STOR R3 [R6+countb]
+3dcc4       ; 0005f                   STOR R3 [R6+countw]
+09ca7       ; 00060                   LOAD R3 [R5+INPUT]
+31801       ; 00061                   AND R3 %0001
+15801       ; 00062                   CMP R3 %0001
+0040c       ; 00063                   BEQ photosense
+09ca7       ; 00064                   LOAD R3 [R5+INPUT]
+31840       ; 00065                   AND R3 %01000000
+15840       ; 00066                   CMP R3 %01000000
+00495       ; 00067                   BEQ photosense2
+0004c       ; 00068                   BRA hello
+09cad       ; 00069 waitbefore1 :     LOAD R3 [R5+TIMER]
+11880 003e8 ; 0006a                   SUB R3 1000
+0a4ad       ; 0006c waitbefore2 :     LOAD R4 [R5+TIMER]
+16103       ; 0006d                   CMP R4 R3
+01601       ; 0006e                   BMI photosense
+001fc       ; 0006f                   BRA waitbefore2
+09801       ; 00070 photosense :      LOAD R3 %001
+3dcc2       ; 00071                   STOR R3 [R6+mode]
+084a7       ; 00072                   LOAD R0 [R5+INPUT]
+30002       ; 00073                   AND R0 %0010
+14002       ; 00074                   CMP R0 %0010
+005e7       ; 00075                   BEQ startbutton
+084a6       ; 00076                   LOAD R0 [R5+ADCONVS]
+24080 00100 ; 00077                   DIV R0 256
+14008       ; 00079                   CMP R0 8
+017f5       ; 0007a                   BMI photosense
+14080 000fb ; 0007b                   CMP R0 251
+01608       ; 0007d                   BMI setwhite
+00000       ; 0007e                   BRA setblack
+0981e       ; 0007f setblack :        LOAD R3 slow
+3dcc0       ; 00080                   STOR R3 [R6+speed]
+09cc3       ; 00081                   LOAD R3 [R6+countb]
+0d801       ; 00082                   ADD R3 1
+3dcc3       ; 00083                   STOR R3 [R6+countb]
+0026c       ; 00084                   BRS displayblack
+00007       ; 00085                   BRA pushdisk
+09853       ; 00086 setwhite :        LOAD R3 fast
+3dcc0       ; 00087                   STOR R3 [R6+speed]
+09cc4       ; 00088                   LOAD R3 [R6+countw]
+0d801       ; 00089                   ADD R3 1
+3dcc4       ; 0008a                   STOR R3 [R6+countw]
+0026b       ; 0008b                   BRS displaywhite
+00000       ; 0008c                   BRA pushdisk
+084a7       ; 0008d pushdisk :        LOAD R0 [R5+INPUT]
+30002       ; 0008e                   AND R0 %0010
+14002       ; 0008f                   CMP R0 %0010
+005cc       ; 00090                   BEQ startbutton
+09cc1       ; 00091                   LOAD R3 [R6+oldinput]
+0a4a7       ; 00092                   LOAD R4 [R5+INPUT]
+3e4c1       ; 00093                   STOR R4 [R6+oldinput]
+3a103       ; 00094                   XOR R4 R3
+31904       ; 00095                   AND R3 R4
+31804       ; 00096                   AND R3 %0100
+15804       ; 00097                   CMP R3 %0100
+00417       ; 00098                   BEQ returnfrompush
+00000       ; 00099                   BRA on_set
+09812       ; 0009a on_set :          LOAD R3 %010010
+3dcab       ; 0009b                   STOR R3 [R5+OUTPUT]
+09cad       ; 0009c                   LOAD R3 [R5+TIMER]
+0a4c0       ; 0009d                   LOAD R4 [R6+speed]
+11904       ; 0009e                   SUB R3 R4
+00000       ; 0009f                   BRA on_wait
+0a4ad       ; 000a0 on_wait :         LOAD R4 [R5+TIMER]
+16103       ; 000a1                   CMP R4 R3
+01601       ; 000a2                   BMI off_set
+001fc       ; 000a3                   BRA on_wait
+09810       ; 000a4 off_set :         LOAD R3 %010000
+3dcab       ; 000a5                   STOR R3 [R5+OUTPUT]
+09cc0       ; 000a6                   LOAD R3 [R6+speed]
+0a064       ; 000a7                   LOAD R4 100
+12103       ; 000a8                   SUB R4 R3
+09cad       ; 000a9                   LOAD R3 [R5+TIMER]
+11904       ; 000aa                   SUB R3 R4
+00000       ; 000ab                   BRA off_wait
+0a4ad       ; 000ac off_wait :        LOAD R4 [R5+TIMER]
+16103       ; 000ad                   CMP R4 R3
+017de       ; 000ae                   BMI pushdisk
+001fc       ; 000af                   BRA off_wait
+09cc2       ; 000b0 returnfrompush :  LOAD R3 [R6+mode]
+31801       ; 000b1                   AND R3 %001
+15801       ; 000b2                   CMP R3 %001
+005bc       ; 000b3                   BEQ photosense
+00048       ; 000b4                   BRA photosense2
+09cad       ; 000b5 hello :           LOAD R3 [R5+TIMER]
+1180a       ; 000b6                   SUB R3 10
+08000       ; 000b7                   LOAD R0 0
+00348       ; 000b8                   BRS Hex7Seg
+3cca8       ; 000b9                   STOR R1 [R5+DSPSEG]
+08801       ; 000ba                   LOAD R1 %000001
+3cca9       ; 000bb                   STOR R1 [R5+DSPDIG]
+00000       ; 000bc                   BRA o_wait
+0a4ad       ; 000bd o_wait :          LOAD R4 [R5+TIMER]
+16103       ; 000be                   CMP R4 R3
+01601       ; 000bf                   BMI l1_set
+001fc       ; 000c0                   BRA o_wait
+09cad       ; 000c1 l1_set :          LOAD R3 [R5+TIMER]
+1180a       ; 000c2                   SUB R3 10
+08011       ; 000c3                   LOAD R0 17
+0033c       ; 000c4                   BRS Hex7Seg
+3cca8       ; 000c5                   STOR R1 [R5+DSPSEG]
+08802       ; 000c6                   LOAD R1 %000010
+3cca9       ; 000c7                   STOR R1 [R5+DSPDIG]
+00000       ; 000c8                   BRA l1_wait
+0a4ad       ; 000c9 l1_wait :         LOAD R4 [R5+TIMER]
+16103       ; 000ca                   CMP R4 R3
+01601       ; 000cb                   BMI l2_set
+001fc       ; 000cc                   BRA l1_wait
+09cad       ; 000cd l2_set :          LOAD R3 [R5+TIMER]
+1180a       ; 000ce                   SUB R3 10
+08011       ; 000cf                   LOAD R0 17
+00330       ; 000d0                   BRS Hex7Seg
+3cca8       ; 000d1                   STOR R1 [R5+DSPSEG]
+08804       ; 000d2                   LOAD R1 %000100
+3cca9       ; 000d3                   STOR R1 [R5+DSPDIG]
+00000       ; 000d4                   BRA l2_wait
+0a4ad       ; 000d5 l2_wait :         LOAD R4 [R5+TIMER]
+16103       ; 000d6                   CMP R4 R3
+01601       ; 000d7                   BMI e_set
+001fc       ; 000d8                   BRA l2_wait
+09cad       ; 000d9 e_set :           LOAD R3 [R5+TIMER]
+1180a       ; 000da                   SUB R3 10
+0800e       ; 000db                   LOAD R0 14
+00324       ; 000dc                   BRS Hex7Seg
+3cca8       ; 000dd                   STOR R1 [R5+DSPSEG]
+08808       ; 000de                   LOAD R1 %001000
+3cca9       ; 000df                   STOR R1 [R5+DSPDIG]
+00000       ; 000e0                   BRA e_wait
+0a4ad       ; 000e1 e_wait :          LOAD R4 [R5+TIMER]
+16103       ; 000e2                   CMP R4 R3
+01601       ; 000e3                   BMI h_set
+001fc       ; 000e4                   BRA e_wait
+09cad       ; 000e5 h_set :           LOAD R3 [R5+TIMER]
+1180a       ; 000e6                   SUB R3 10
+08010       ; 000e7                   LOAD R0 16
+00318       ; 000e8                   BRS Hex7Seg
+3cca8       ; 000e9                   STOR R1 [R5+DSPSEG]
+08810       ; 000ea                   LOAD R1 %010000
+3cca9       ; 000eb                   STOR R1 [R5+DSPDIG]
+00000       ; 000ec                   BRA h_wait
+0a4ad       ; 000ed h_wait :          LOAD R4 [R5+TIMER]
+16103       ; 000ee                   CMP R4 R3
+0176d       ; 000ef                   BMI startbutton
+001fc       ; 000f0                   BRA h_wait
+08013       ; 000f1 displayblack :    LOAD R0 19
+0030e       ; 000f2                   BRS Hex7Seg
+3cca8       ; 000f3                   STOR R1 [R5+DSPSEG]
+08801       ; 000f4                   LOAD R1 %000001
+3cca9       ; 000f5                   STOR R1 [R5+DSPDIG]
+00196       ; 000f6                   BRA pushdisk
+08012       ; 000f7 displaywhite :    LOAD R0 18
+00308       ; 000f8                   BRS Hex7Seg
+3cca8       ; 000f9                   STOR R1 [R5+DSPSEG]
+088e0       ; 000fa                   LOAD R1 %100000
+3cca9       ; 000fb                   STOR R1 [R5+DSPDIG]
+00190       ; 000fc                   BRA pushdisk
+09802       ; 000fd photosense2 :     LOAD R3 %0010
+3dcc2       ; 000fe                   STOR R3 [R6+mode]
+084a7       ; 000ff                   LOAD R0 [R5+INPUT]
+30002       ; 00100                   AND R0 %0010
+14002       ; 00101                   CMP R0 %0010
+0055a       ; 00102                   BEQ startbutton
+084a6       ; 00103                   LOAD R0 [R5+ADCONVS]
+24080 00100 ; 00104                   DIV R0 256
+14008       ; 00106                   CMP R0 8
+017f5       ; 00107                   BMI photosense2
+14080 000fb ; 00108                   CMP R0 251
+01601       ; 0010a                   BMI setwhite2
+00005       ; 0010b                   BRA setblack2
+00333       ; 0010c setwhite2 :       BRS pulledposition
+0981e       ; 0010d                   LOAD R3 slow
+3dcc0       ; 0010e                   STOR R3 [R6+speed]
+003e7       ; 0010f                   BRS displaywhite
+0017c       ; 00110                   BRA pushdisk
+00311       ; 00111 setblack2 :       BRS initialposition
+0981e       ; 00112                   LOAD R3 slow
+3dcc0       ; 00113                   STOR R3 [R6+speed]
+003dc       ; 00114                   BRS displayblack
+00177       ; 00115                   BRA pushdisk
+08010       ; 00116 diplaycount :     LOAD R0 16
+00300 3fee8 ; 00117                   BRS Hex7Seg
+3cca8       ; 00119                   STOR R1 [R5+DSPSEG]
+08801       ; 0011a                   LOAD R1 %000001
+3cca9       ; 0011b                   STOR R1 [R5+DSPDIG]
+00170       ; 0011c                   BRA pushdisk
+
+@D 3ffff 00005 ; 
+00000 00000 00000 00000 00000                   ;           
+
+@S 3ffff 000f0
+
+.

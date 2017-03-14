@@ -11,6 +11,7 @@
 ; 7 - start Railmode
 ;
 ;Outputs:
+; 0 -
 ; 1 - motor (2nd in the row)
 ; 2-3 - H-bridge second motor
 ; 4 - bulb (5th in the row) 
@@ -29,7 +30,7 @@
 ;
 	speed		DS  1 ; offset for being on (81 with fast push and 30 with slow one)
 	oldinput	DS	1 ; helps to determine end of one push cycle using the button pressed by the circular component on the motor
-	mode		DS	1 ; %001 for thrower and %0010 for Railmode
+	mode		DS	1 ; %001 for Thrower and %0010 for Railmode
 	countb		DS	1 ;
 	countw		DS	1;
 ;
@@ -42,9 +43,8 @@
    DSPDIG      EQU    9  ;  relative position of the 7-segment display's digit selector
    DSPSEG      EQU    8  ;  relative position of the 7-segment display's segments
    ADCONVS     EQU     6  ;  the outputs, concatenated, of the 2 A/D-converters
-   TIM001ms    EQU    10  ;  1ms equals 10 TIMER steps
-   fast		   EQU 	  83
-   slow		   EQU 	  30
+   fast		   EQU 	  81
+   slow		   EQU 	  20
    
 	begin :
 		BRA initialization
@@ -110,17 +110,22 @@
 			LOAD R0 0					;timer init - prolly not neccessary, but just to be safe
 			SUB  R0 [R5+TIMER]			;
 			STOR R0 [R5+TIMER]			; timer = timer + (-timer)
+			LOAD  	R5  IOAREA   				;  R5 := "address of the area with  I/O-registers"
 			
-			LOAD 	R0	%0000
+			;LOAD 	R0	%0000
+			LOAD	R0 	[R5+INPUT]
+			AND 	R0	%0100
 			STOR	R0  [GB+oldinput]			; set the orginal value of stopswitch to 0
-			;STOR	R0	[GB+countb]
-			;STOR	R0	[GB+countw]
+			
+			STOR	R0	[GB+countb]
+			STOR	R0	[GB+countw]
 			;LOAD	R0	%0000
 			;STOR	R0	[GB+oldreset]
-			LOAD  	R5  IOAREA   				;  R5 := "address of the area with  I/O-registers"
+
 			LOAD  	R3  %010000					;load for bulb
 			STOR 	R3  [R5+OUTPUT] 			;turn on the bulb (before the first reading)
 			BRS		initialposition
+			BRS		setuppusher
 			BRA		startbutton						
 ;__________________________________________________________________________________	
 	initialposition: ;set to the initial position = Retracted
@@ -165,6 +170,98 @@
 			
 	returnfrominit:
 			RTS                  		;the jump to this subroutine can happen either in the beginning when just checking and also when setting the position while sorting
+;__________________________________________________________________________________
+
+	setuppusher:
+			LOAD	R3 	[R5+INPUT] 
+			AND		R3	%00100
+			CMP		R3	%00100
+			BEQ		setunpressed
+			BRA		setpressed
+			
+	setunpressed:
+			LOAD	R3  [R5+INPUT]
+			AND		R3  %0100
+			CMP 	R3  %0000
+			BEQ		returnfromsetpusher  ;if already in the initial position - wait for start button
+			LOAD	R3	fast		
+			STOR 	R3	[GB+speed] 		 ;speed (=offset for being on is now 80)
+			
+	on_set4:	 							;method that sets the motor ON and stores the time to stop the waiting in R3
+			LOAD	R3	%000010
+			STOR 	R3  [R5+OUTPUT] 
+			LOAD	R3	[R5+TIMER]
+			LOAD 	R4 	[GB+speed] 		;set the waiting time 
+			SUB 	R3	R4
+			BRA 	on_wait4
+			
+	on_wait4:
+			LOAD    R4  [R5+TIMER]
+			CMP 	R4	R3
+			BMI		off_set4
+			BRA		on_wait4
+			
+	off_set4:							;method that sets the motor OFF and sets the correct variables for the waiting 
+			LOAD  	R3  %0000			;set the motor off, and just the bulb stays on	
+			STOR 	R3  [R5+OUTPUT]    	;
+			LOAD	R3 	[GB+speed]  	;calculate the complement of speed (the waiting time to be off) for example with fast => load 81
+			LOAD 	R4 	100
+			SUB		R4  R3				;and store it R4, in the example its gonna be 19
+			LOAD	R3	[R5+TIMER]
+			SUB 	R3	R4				;set the waiting according to what was stored in the R4 (the waiting time to be off)
+			BRA		off_wait4
+	
+	off_wait4:
+			LOAD    R4  [R5+TIMER]      ; wait off for the time that was calculated before
+			CMP 	R4	R3
+			BMI		setunpressed				;just return to looping in PWM for the motor
+			BRA		off_wait4
+			
+	setpressed:
+			LOAD	R3  [R5+INPUT]
+			AND		R3  %0100
+			CMP 	R3  %0100
+			BEQ		returnfromsetpusher  ;if already in the initial position - wait for start button
+			LOAD	R3	fast		
+			STOR 	R3	[GB+speed] 		 ;speed (=offset for being on is now 80)
+			
+	on_set5:	 							;method that sets the motor ON and stores the time to stop the waiting in R3
+			LOAD	R3	%000001
+			STOR 	R3  [R5+OUTPUT] 
+			LOAD	R3	[R5+TIMER]
+			LOAD 	R4 	[GB+speed] 		;set the waiting time 
+			SUB 	R3	R4
+			BRA 	on_wait5
+			
+	on_wait5:
+			LOAD    R4  [R5+TIMER]
+			CMP 	R4	R3
+			BMI		off_set5
+			BRA		on_wait5
+			
+	off_set5:							;method that sets the motor OFF and sets the correct variables for the waiting 
+			LOAD  	R3  %0000			;set the motor off, and just the bulb stays on	
+			STOR 	R3  [R5+OUTPUT]    	;
+			LOAD	R3 	[GB+speed]  	;calculate the complement of speed (the waiting time to be off) for example with fast => load 81
+			LOAD 	R4 	100
+			SUB		R4  R3				;and store it R4, in the example its gonna be 19
+			LOAD	R3	[R5+TIMER]
+			SUB 	R3	R4				;set the waiting according to what was stored in the R4 (the waiting time to be off)
+			BRA		off_wait5
+	
+	off_wait5:
+			LOAD    R4  [R5+TIMER]      ; wait off for the time that was calculated before
+			CMP 	R4	R3
+			BMI		setpressed				;just return to looping in PWM for the motor
+			BRA		off_wait5
+			
+			
+	returnfromsetpusher:
+			RTS						
+			
+	
+	
+			
 ;__________________________________________________________________________________
 	pulledposition: ;set to the initial position
 			LOAD	R3  [R5+INPUT]
@@ -216,12 +313,12 @@
 			LOAD 	R3	[R5+INPUT]
 			AND		R3	%0001
 			CMP		R3 	%0001
-			BEQ		photosense
+			BEQ		setupthrower
 			
 			LOAD 	R3	[R5+INPUT]
 			AND		R3	%01000000
 			CMP		R3 	%01000000
-			BEQ		photosense2
+			BEQ		setuprailmode
 						
 			BRA		hello
 ;			
@@ -234,6 +331,17 @@
 			CMP 	R4	R3
 			BMI		photosense
 			BRA		waitbefore2
+;__________________________________________________________________________________________________________
+
+	setupthrower:
+			BRS		initialposition
+			BRS		setuppusher
+			BRA 	photosense
+			
+	setuprailmode:
+			BRS		initialposition
+			BRS		setuppusher
+			BRA 	photosense2
 ;__________________________________________________________________________________	
 	photosense : ;Thrower - read the sensor
 			LOAD	R3	%001        ; these two lines need to be taken out of the method
@@ -248,7 +356,7 @@
 			DIV 	R0	256				;erase the last 8 bits from the other analogue input                                             ;DIV = real PP2 photosensor, MOD = slider on emulator
 
 			CMP		R0	8	 			;if the value read is lower than 6 = meaning the most light is coming in
-			BMI	 	photosense			;just photosense again = so no motion when the bulb is on
+			BMI	 	jumptodisplay			;just photosense again = so no motion when the bulb is on
 			CMP		R0	251	 	     	;if its lower than 255
 			BMI	 	setwhite			;jump to setting values for white
 
@@ -272,6 +380,10 @@
 			STOR	R3	[GB+countw]
 			BRS		displaywhite
 			BRA  	pushdisk
+			
+	jumptodisplay:
+			BRS 	displaycount
+			BRA		photosense
 ;__________________________________________________________________________________________________________
 	pushdisk: ;Thrower design - push slow or fast
 			LOAD 	R0 	[R5+INPUT]
@@ -409,6 +521,42 @@
 			BRA		h_wait
 			
 ;__________________________________________________________________________________________________________
+	
+	displaycount: ;(b_set)
+			LOAD	R3	[R5+TIMER]
+			SUB 	R3 	10
+			LOAD  	R0  [GB+countb]
+			BRS 	Hex7Seg      ;  translate (value in) R0 into a display pattern
+            STOR  	R1  [R5+DSPSEG] ; and place this in the Display Element
+            LOAD  	R1  %000001  ;  R1 := the bitpattern identifying Digit 1
+            STOR  	R1  [R5+DSPDIG] ; activate Display Element nr. 1
+            BRA  	b_wait ;
+			
+	b_wait:		
+			LOAD    R4  [R5+TIMER]
+			CMP 	R4	R3
+			BMI		w_set
+			BRA		b_wait
+			
+	w_set:
+			LOAD	R3	[R5+TIMER]
+			SUB 	R3 	10
+			LOAD  	R0  [GB+countw] 																		;16 has to be changed if more letters are added in before L
+			BRS 	Hex7Seg      ;  translate (value in) R0 into a display pattern
+            STOR  	R1  [R5+DSPSEG] ; and place this in the Display Element
+            LOAD  	R1  %100000  ;  R1 := the bitpattern identifying Digit 5
+            STOR  	R1  [R5+DSPDIG] ; activate Display Element nr. 1
+            BRA  	w_wait ;
+			
+	w_wait:
+			LOAD    R4  [R5+TIMER]
+			CMP 	R4	R3
+			BMI		returnfromdisplaycount
+			BRA		w_wait
+
+	returnfromdisplaycount:
+			RTS
+;__________________________________________________________________________________________________________
 	displayblack:
 			LOAD  	R0  19
 			BRS 	Hex7Seg      ;  translate (value in) R0 into a display pattern
@@ -442,7 +590,7 @@
 			DIV  	R0	256				;erase the last 8 bits from the other analogue input                                             ;DIV = real PP2 photosensor, MOD = slider on emulator
 
 			CMP		R0	8	 			;if the value read is lower than 8 = meaning the most light is coming in
-			BMI	 	photosense2			;just photosense again = so no motion when the bulb is on
+			BMI	 	jumptodisplay2		;just photosense again = so no motion when the bulb is on
 			CMP		R0	251	 	     	;if its lower than 255
 			BMI	 	setwhite2			;jump to setting values for white (setwhite = initialposition)
 
@@ -452,6 +600,9 @@
 			BRS 	pulledposition
 			LOAD	R3	slow			;set for black
 			STOR 	R3	[GB+speed]  	;speed (=offset for being on is now 20)
+			LOAD	R3	[GB+countw]
+			ADD		R3	1
+			STOR	R3	[GB+countw]
 			BRS		displaywhite
 			BRA  	pushdisk
 			
@@ -459,15 +610,13 @@
 			BRS 	initialposition
 			LOAD	R3	slow			;set for black
 			STOR 	R3	[GB+speed]  	;speed (=offset for being on is now 20)
+			LOAD	R3	[GB+countb]
+			ADD		R3	1
+			STOR	R3	[GB+countb]
 			BRS		displayblack
 			BRA  	pushdisk
 	
-	diplaycount:
-			LOAD  	R0  16
-			BRS 	Hex7Seg      ;  translate (value in) R0 into a display pattern
-            STOR  	R1  [R5+DSPSEG] ; and place this in the Display Element
-            LOAD  	R1  %000001  ;  R1 := the bitpattern identifying Digit 1
-            STOR  	R1  [R5+DSPDIG] ; activate Display Element nr. 1
-            BRA  	pushdisk ;
-	
+	jumptodisplay2:
+			BRS 	displaycount
+			BRA		photosense2
 @END
